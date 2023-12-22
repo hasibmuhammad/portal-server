@@ -14,8 +14,31 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
-app.use(cors({ origin: process.env.CORS, credentials: true }));
+app.use(cors({ origin: ["http://localhost:5173"], credentials: true }));
 app.use(cookieParser());
+
+// Custom Middleware
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+
+  console.log(token);
+  if (!token) {
+    res.status(401).send({ message: "Unauthorized Access!" });
+    process.exit(1);
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      res.status(401).send({ message: "Unauthorized Access!" });
+      process.exit(1);
+    }
+    req.user = decoded;
+
+    console.log(decoded);
+
+    next();
+  });
+};
 
 // MongoDB
 const uri = process.env.MONGO_URI;
@@ -41,6 +64,39 @@ const run = async () => {
     // API
     app.get("/", async (req, res) => {
       res.send(`Welcome to the assignment portal backend`);
+    });
+
+    // jwt - set cookie
+    app.post("/jwt", async (req, res) => {
+      const payload = await req.body;
+
+      const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: false,
+        })
+        .send({ success: true });
+    });
+
+    // clear cookie upon logout
+    app.get("/logout", async (req, res) => {
+      res.clearCookie("token").send({ success: true });
+    });
+
+    // Create assignment
+    app.post("/create", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+
+      const assignment = await req.body;
+
+      res.send(assignment);
     });
   } finally {
     // Ensures that the client will close when you finish/error
