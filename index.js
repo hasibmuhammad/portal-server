@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
-import { MongoClient, ServerApiVersion } from "mongodb";
+import { MongoClient, ObjectId, ServerApiVersion } from "mongodb";
 
 dotenv.config();
 
@@ -110,6 +110,30 @@ const run = async () => {
     });
 
     // Get assignment - based on difficulty
+    app.get("/assignmentsbydifficulty", async (req, res) => {
+      const assignments = await assignmentCollection
+        .find({ difficulty: req.query.difficulty })
+        .toArray();
+
+      res.send(assignments);
+    });
+
+    // Get assignment by id
+    app.get("/assignment/:id", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+
+      const id = new ObjectId(req.params.id);
+
+      console.log(id);
+
+      const assignment = await assignmentCollection.findOne({ _id: id });
+
+      console.log(assignment);
+
+      res.send(assignment);
+    });
   } finally {
   }
 };
