@@ -21,7 +21,6 @@ app.use(cookieParser());
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
 
-  console.log(token);
   if (!token) {
     res.status(401).send({ message: "Unauthorized Access!" });
     process.exit(1);
@@ -33,9 +32,6 @@ const verifyToken = async (req, res, next) => {
       process.exit(1);
     }
     req.user = decoded;
-
-    console.log(decoded);
-
     next();
   });
 };
@@ -60,6 +56,11 @@ const run = async () => {
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
+
+    // collections
+    const assignmentCollection = client
+      .db("assignmentPortal")
+      .collection("assignments");
 
     // API
     app.get("/", async (req, res) => {
@@ -96,10 +97,20 @@ const run = async () => {
 
       const assignment = await req.body;
 
-      res.send(assignment);
+      const result = await assignmentCollection.insertOne(assignment);
+
+      res.send(result);
     });
+
+    // get assignments
+    app.get("/assignments", async (req, res) => {
+      const assignments = await assignmentCollection.find().toArray();
+
+      res.send(assignments);
+    });
+
+    // Get assignment - based on difficulty
   } finally {
-    // Ensures that the client will close when you finish/error
   }
 };
 
