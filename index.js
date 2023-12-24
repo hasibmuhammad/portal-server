@@ -61,6 +61,9 @@ const run = async () => {
     const assignmentCollection = client
       .db("assignmentPortal")
       .collection("assignments");
+    const submittedCollection = client
+      .db("assignmentPortal")
+      .collection("submitted");
 
     // API
     app.get("/", async (req, res) => {
@@ -109,7 +112,7 @@ const run = async () => {
       res.send(assignments);
     });
 
-    // Get assignment - based on difficulty
+    // Get assignment - based on difficulty, page and size
     app.get("/assignmentsbydifficulty", async (req, res) => {
       const page = parseInt(req.query.page);
       const size = parseInt(req.query.size);
@@ -117,14 +120,22 @@ const run = async () => {
       let filter = {};
       if (req.query.difficulty !== "") {
         filter = { difficulty: req.query.difficulty };
+        // limit =
       }
       const result = await assignmentCollection
         .find(filter)
         .skip(page * size)
         .limit(size)
         .toArray();
+      res.send(result);
+    });
 
-      console.log(result);
+    // Get assignment - based on only difficulty
+    app.get("/assignmentbydiff", async (req, res) => {
+      const filter = { difficulty: req.query.difficulty };
+      const result = await assignmentCollection.find(filter).toArray();
+
+      // console.log("difficulty: ", result);
       res.send(result);
     });
 
@@ -189,20 +200,52 @@ const run = async () => {
       res.send(delRes);
     });
 
-    // get product according to page and size
-    app.get("/pagination", async (req, res) => {
-      const page = parseInt(req.query.page);
-      const size = parseInt(req.query.size);
+    // Create submitted assignment
+    app.post("/createSubmitted", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
 
-      const result = await assignmentCollection
-        .find()
-        .skip(page * size)
-        .limit(size)
+      const submittedAssignment = await req.body;
+      const result = await submittedCollection.insertOne(submittedAssignment);
+      res.send(result);
+    });
+
+    // get submitted assignments
+    app.get("/submitted", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+
+      const submittedAssignments = await submittedCollection.find().toArray();
+
+      res.send(submittedAssignments);
+    });
+    app.get("/myassignments", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+
+      const myassignments = await submittedCollection
+        .find({ submittedBy: await req.user.email })
         .toArray();
 
-      res.send(result);
-      // console.log(page, size, result);
+      res.send(myassignments);
     });
+
+    // // get product according to page and size
+    // app.get("/pagination", async (req, res) => {
+    //   const page = parseInt(req.query.page);
+    //   const size = parseInt(req.query.size);
+
+    //   const result = await assignmentCollection
+    //     .find()
+    //     .skip(page * size)
+    //     .limit(size)
+    //     .toArray();
+
+    //   res.send(result);
+    // });
   } finally {
   }
 };
