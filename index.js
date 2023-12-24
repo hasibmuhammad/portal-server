@@ -111,11 +111,21 @@ const run = async () => {
 
     // Get assignment - based on difficulty
     app.get("/assignmentsbydifficulty", async (req, res) => {
-      const assignments = await assignmentCollection
-        .find({ difficulty: req.query.difficulty })
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+
+      let filter = {};
+      if (req.query.difficulty !== "") {
+        filter = { difficulty: req.query.difficulty };
+      }
+      const result = await assignmentCollection
+        .find(filter)
+        .skip(page * size)
+        .limit(size)
         .toArray();
 
-      res.send(assignments);
+      console.log(result);
+      res.send(result);
     });
 
     // Get assignment by id
@@ -126,13 +136,72 @@ const run = async () => {
 
       const id = new ObjectId(req.params.id);
 
-      console.log(id);
-
       const assignment = await assignmentCollection.findOne({ _id: id });
 
       console.log(assignment);
+      if (assignment) {
+        res.send({ success: true, assignment });
+      } else {
+        res.send({ success: false });
+      }
+    });
 
-      res.send(assignment);
+    // update assignment
+    app.put("/update/:id", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+
+      const info = await req.body;
+      const { title, photo, marks, difficulty, due, description } = info;
+      const options = {
+        upsert: true,
+      };
+      const updateDoc = {
+        $set: {
+          title,
+          photo,
+          marks,
+          difficulty,
+          due,
+          description,
+        },
+      };
+
+      const updatedResult = await assignmentCollection.updateOne(
+        { _id: new ObjectId(req.params.id) },
+        updateDoc,
+        options
+      );
+
+      res.send(updatedResult);
+    });
+
+    // Delete assignment by id
+    app.delete("/delete/:id", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+      const id = new ObjectId(req.params.id);
+
+      const delRes = await assignmentCollection.deleteOne({ _id: id });
+
+      res.send(delRes);
+    });
+
+    // get product according to page and size
+    app.get("/pagination", async (req, res) => {
+      const page = parseInt(req.query.page);
+      const size = parseInt(req.query.size);
+
+      const result = await assignmentCollection
+        .find()
+        .skip(page * size)
+        .limit(size)
+        .toArray();
+
+      res.send(result);
+      // console.log(page, size, result);
     });
   } finally {
   }
