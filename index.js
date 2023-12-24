@@ -235,6 +235,31 @@ const run = async () => {
       res.send(myassignments);
     });
 
+    // Update submitted Assignment after marking
+    app.patch("/mark/:id", verifyToken, async (req, res) => {
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+
+      const data = await req.body;
+      const id = new ObjectId(req.params.id);
+      const filter = { _id: id };
+      // const options = { upsert: true };
+
+      const updateDoc = {
+        $set: {
+          givenMark: data.givenMark,
+          feedback: data.feedback,
+          gradedBy: data.gradedBy,
+          status: data.status,
+        },
+      };
+
+      const result = await submittedCollection.updateOne(filter, updateDoc);
+
+      res.send(result);
+    });
+
     // // get product according to page and size
     // app.get("/pagination", async (req, res) => {
     //   const page = parseInt(req.query.page);
