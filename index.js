@@ -217,7 +217,9 @@ const run = async () => {
         res.status(403).send({ message: "Forbidden Access!" });
       }
 
-      const submittedAssignments = await submittedCollection.find().toArray();
+      const submittedAssignments = await submittedCollection
+        .find({ status: "pending" })
+        .toArray();
 
       res.send(submittedAssignments);
     });
