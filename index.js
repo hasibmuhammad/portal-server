@@ -94,7 +94,10 @@ const run = async () => {
 
     // clear cookie upon logout
     app.get("/logout", async (req, res) => {
-      res.clearCookie("token").send({ success: true });
+      if ((await req.user.email) !== req.query.email) {
+        res.status(403).send({ message: "Forbidden Access!" });
+      }
+      res.clearCookie("token");
     });
 
     // Create assignment
