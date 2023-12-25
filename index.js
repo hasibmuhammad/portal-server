@@ -260,6 +260,12 @@ const run = async () => {
       res.send(result);
     });
 
+    app.get("/featured", async (req, res) => {
+      const result = await assignmentCollection.find().limit(3).toArray();
+
+      res.send(result);
+    });
+
     // // get product according to page and size
     // app.get("/pagination", async (req, res) => {
     //   const page = parseInt(req.query.page);
