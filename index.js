@@ -12,8 +12,8 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
     origin: ["https://assignment-portal-d23d4.web.app"],
@@ -86,8 +86,8 @@ const run = async () => {
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
-          sameSite: false,
+          secure: true,
+          sameSite: "none",
         })
         .send({ success: true });
     });
