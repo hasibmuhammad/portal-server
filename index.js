@@ -14,7 +14,12 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
-app.use(cors({ origin: ["http://localhost:5173"], credentials: true }));
+app.use(
+  cors({
+    origin: ["https://assignment-portal-d23d4.web.app"],
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 
 // Custom Middleware
